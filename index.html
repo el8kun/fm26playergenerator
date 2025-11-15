@@ -10,64 +10,106 @@ document.querySelectorAll('.tab').forEach(tab => {
   });
 });
 
-// OUTILS
-function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
-function clampFM(v) { return Math.max(5, Math.min(15, Math.round(v))); }
+// ---------------------------------------------
+// OUTILS FM26
+// ---------------------------------------------
+function randInt(min, max) {
+  min = Math.floor(min); max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function clampFM(v) {
+  return Math.max(5, Math.min(15, Math.round(v)));
+}
+
 function enforceMax15(attrs) {
+  // Compte et réduit si >3 attributs = 15
   let keys15 = Object.keys(attrs).filter(k => attrs[k] === 15);
-  while (keys15.length > 3) { const k = keys15.pop(); attrs[k] = 14; }
+  while (keys15.length > 3) {
+    const k = keys15.pop();
+    attrs[k] = 14; // on baisse à 14
+  }
   return attrs;
 }
 
-// PROFILS & POSTES
+// ---------------------------------------------
+// PROFILS & POSTES (modèle FM26)
+// ---------------------------------------------
 const BASE_PROFILES = {
-  "Équilibré": 10, "Offensif": 11, "Défensif": 10,
-  "Physique": 11, "Rapide": 12, "Technique": 12
+  "Équilibré": 10,
+  "Offensif": 11,
+  "Défensif": 10,
+  "Physique": 11,
+  "Rapide": 12,
+  "Technique": 12
 };
 
 const POSITION_BONUS = {
-  "Buteur (BU)": { "Finition":2,"Sang-froid":1,"Dribbles":1 },
-  "Ailier (AD/AG)": { "Vitesse":2,"Accélération":1,"Dribbles":1 },
-  "Milieu offensif (MOC)": { "Technique":2,"Passes":1,"Décisions":1 },
-  "Milieu central (MC)": { "Passes":1,"Décisions":1,"Endurance":1 },
-  "Défenseur central (DC)": { "Tacles":2,"Placement":1,"Physique":1,"Jeu de tête":1 },
-  "Latéral (DG/DR)": { "Vitesse":1,"Tacles":1,"Endurance":1 },
-  "Gardien (GB)": { "Placement":2,"Décisions":1 }
+  "Buteur (BU)": { "Finition": 2, "Sang-froid": 1 },
+  "Ailier (AD/AG)": { "Vitesse": 2, "Accélération": 1 },
+  "Milieu offensif (MOC)": { "Technique": 2, "Passes": 1 },
+  "Milieu central (MC)": { "Passes": 1, "Décisions": 1 },
+  "Défenseur central (DC)": { "Tacles": 2, "Placement": 1 },
+  "Latéral (DG/DR)": { "Vitesse": 1, "Tacles": 1 },
+  "Gardien (GB)": { "Placement": 1 }
 };
 
-// GENERATION JOUEUR
+// ---------------------------------------------
+// GÉNÉRATION DU JOUEUR
+// ---------------------------------------------
 document.getElementById("generate").addEventListener("click", () => {
+
   let name = document.getElementById("name").value || "Nom";
   let nat = document.getElementById("nation").value || "Pays";
   let age = parseInt(document.getElementById("age").value) || 20;
   let pos = document.getElementById("position").value;
   let prof = document.getElementById("profile").value;
+
   let base = BASE_PROFILES[prof] ?? 10;
 
+  // Génération initiale
   let attrs = {
-    "Finition": clampFM(base + randInt(-3,3) + (POSITION_BONUS[pos]?.Finition||0)),
-    "Vitesse": clampFM(base + randInt(-3,3) + (POSITION_BONUS[pos]?.Vitesse||0)),
-    "Accélération": clampFM(base + randInt(-3,3) + (POSITION_BONUS[pos]?.Accélération||0)),
-    "Tacles": clampFM(base + randInt(-3,3) + (POSITION_BONUS[pos]?.Tacles||0)),
-    "Passes": clampFM(base + randInt(-3,3) + (POSITION_BONUS[pos]?.Passes||0)),
-    "Technique": clampFM(base + randInt(-3,3) + (POSITION_BONUS[pos]?.Technique||0)),
-    "Décisions": clampFM(base + randInt(-3,3) + (POSITION_BONUS[pos]?.Décisions||0)),
-    "Placement": clampFM(base + randInt(-3,3) + (POSITION_BONUS[pos]?.Placement||0)),
-    "Sang-froid": clampFM(base + randInt(-3,3) + (POSITION_BONUS[pos]?.["Sang-froid"]||POSITION_BONUS[pos]?.SangFroid||0)),
-    "Dribbles": clampFM(base + randInt(-3,3) + (POSITION_BONUS[pos]?.Dribbles||0)),
-    "Endurance": clampFM(base + randInt(-3,3) + (POSITION_BONUS[pos]?.Endurance||0)),
-    "Physique": clampFM(base + randInt(-3,3) + (POSITION_BONUS[pos]?.Physique||0)),
-    "Jeu de tête": clampFM(base + randInt(-3,3) + (POSITION_BONUS[pos]?.["Jeu de tête"]||0))
+    "Finition": clampFM(base + randInt(-3, 3) + (POSITION_BONUS[pos]?.Finition || 0)),
+    "Vitesse": clampFM(base + randInt(-3, 3) + (POSITION_BONUS[pos]?.Vitesse || 0)),
+    "Accélération": clampFM(base + randInt(-3, 3) + (POSITION_BONUS[pos]?.Accélération || 0)),
+    "Tacles": clampFM(base + randInt(-3, 3) + (POSITION_BONUS[pos]?.Tacles || 0)),
+    "Passes": clampFM(base + randInt(-3, 3) + (POSITION_BONUS[pos]?.Passes || 0)),
+    "Technique": clampFM(base + randInt(-3, 3) + (POSITION_BONUS[pos]?.Technique || 0)),
+    "Décisions": clampFM(base + randInt(-3, 3) + (POSITION_BONUS[pos]?.Décisions || 0)),
+    "Placement": clampFM(base + randInt(-3, 3) + (POSITION_BONUS[pos]?.Placement || 0)),
+    "Sang-froid": clampFM(base + randInt(-3, 3) + (POSITION_BONUS[pos]?.["Sang-froid"] || POSITION_BONUS[pos]?.SangFroid || 0))
   };
 
+  // S'assurer des bornes et des 15 max
+  // 1) forcer bornes 5..15 (double sécurité)
+  for (const k in attrs) {
+    attrs[k] = Math.max(5, Math.min(15, parseInt(attrs[k], 10) || 5));
+  }
+
+  // 2) réduire si >3 notes à 15
   attrs = enforceMax15(attrs);
 
+  // 3) re-force bornes encore (au cas où)
+  for (const k in attrs) {
+    attrs[k] = Math.max(5, Math.min(15, parseInt(attrs[k], 10) || 5));
+  }
+
   // Potentiel
-  const potentiel = randInt(130,200);
+  const potentiel = randInt(130, 200);
 
   // Affichage
-  let txt = `Nom : ${name}\nNationalité : ${nat}\nÂge : ${age}\nPoste : ${pos}\nProfil : ${prof}\n\nPotentiel : ${potentiel}/200\n\nAttributs :\n`;
-  for(const a in attrs) txt += `${a} : ${attrs[a]}\n`;
+  let txt = `Nom : ${name}
+Nationalité : ${nat}
+Âge : ${age}
+Poste : ${pos}
+Profil : ${prof}
+
+Potentiel : ${potentiel} / 200
+
+Attributs :
+`;
+
+  for (const a in attrs) txt += `${a} : ${attrs[a]}\n`;
 
   document.getElementById("output").textContent = txt;
 });
