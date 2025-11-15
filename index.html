@@ -1,3 +1,86 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Générateur FM26 - Multi-profils</title>
+  <style>
+    body { font-family: Inter, sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; padding: 20px; }
+    .container { max-width: 1000px; margin: auto; }
+    h1 { text-align: center; margin-bottom: 20px; font-size: 28px; }
+    .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
+    .tab { padding: 10px 16px; border-radius: 8px; background: #1e293b; cursor: pointer; }
+    .tab.active { background: #3b82f6; }
+    .card { background: #1e293b; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,.4); }
+    label { display: block; margin-top: 12px; font-size: 14px; }
+    input, select { width: 100%; padding: 8px; border-radius: 6px; border: none; margin-top: 5px; background: #0f172a; color: #e2e8f0; }
+    button { margin-top: 15px; padding: 10px 16px; background: #3b82f6; color: white; border: none; border-radius: 8px; cursor: pointer; }
+    pre { background: #0f172a; padding: 15px; border-radius: 8px; max-height: 400px; overflow-y: auto; margin-top: 20px; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Générateur de Joueurs FM26</h1>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="classique">Générateur Classique</div>
+    <div class="tab" data-tab="wonderkid">Wonderkid</div>
+    <div class="tab" data-tab="regens">Regen Réaliste</div>
+  </div>
+
+  <div id="classique" class="card tab-content">
+    <h2>Générateur Classique</h2>
+    <label>Nom du joueur</label>
+    <input id="name" value="Jean Dupont" />
+
+    <label>Nationalité</label>
+    <input id="nation" value="France" />
+
+    <label>Âge</label>
+    <input id="age" type="number" value="21" />
+
+    <label>Poste</label>
+    <select id="position">
+      <option>Buteur (BU)</option>
+      <option>Ailier (AD/AG)</option>
+      <option>Milieu offensif (MOC)</option>
+      <option>Milieu central (MC)</option>
+      <option>Défenseur central (DC)</option>
+      <option>Latéral (DG/DR)</option>
+      <option>Gardien (GB)</option>
+    </select>
+
+    <label>Style du joueur</label>
+    <select id="profile">
+      <option>Équilibré</option>
+      <option>Offensif</option>
+      <option>Défensif</option>
+      <option>Physique</option>
+      <option>Rapide</option>
+      <option>Technique</option>
+    </select>
+
+    <label>Aléatoire</label>
+    <input id="randomness" type="range" min="0" max="100" value="30" />
+
+    <button id="generate">Générer</button>
+    <button id="copy">Copier le bloc</button>
+
+    <pre id="output">Clique sur Générer pour obtenir le joueur.</pre>
+  </div>
+
+  <div id="wonderkid" class="card tab-content" style="display:none">
+    <h2>Générateur Wonderkid (15-18 ans)</h2>
+    <p>Attributs élevés, potentiel top joueur.</p>
+  </div>
+
+  <div id="regens" class="card tab-content" style="display:none">
+    <h2>Générateur Regen Réaliste</h2>
+    <p>Génération inspirée des regens FM : modestes, équilibrés, progression naturelle.</p>
+  </div>
+
+</div>
+
 <script>
 // gestion des tabs
 document.querySelectorAll('.tab').forEach(tab => {
@@ -14,7 +97,6 @@ document.querySelectorAll('.tab').forEach(tab => {
 // OUTILS FM26
 // ---------------------------------------------
 function randInt(min, max) {
-  min = Math.floor(min); max = Math.floor(max);
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
@@ -23,11 +105,10 @@ function clampFM(v) {
 }
 
 function enforceMax15(attrs) {
-  // Compte et réduit si >3 attributs = 15
   let keys15 = Object.keys(attrs).filter(k => attrs[k] === 15);
   while (keys15.length > 3) {
     const k = keys15.pop();
-    attrs[k] = 14; // on baisse à 14
+    attrs[k] = 14;
   }
   return attrs;
 }
@@ -59,15 +140,14 @@ const POSITION_BONUS = {
 // ---------------------------------------------
 document.getElementById("generate").addEventListener("click", () => {
 
-  let name = document.getElementById("name").value || "Nom";
-  let nat = document.getElementById("nation").value || "Pays";
-  let age = parseInt(document.getElementById("age").value) || 20;
+  let name = document.getElementById("name").value;
+  let nat = document.getElementById("nation").value;
+  let age = parseInt(document.getElementById("age").value);
   let pos = document.getElementById("position").value;
   let prof = document.getElementById("profile").value;
 
-  let base = BASE_PROFILES[prof] ?? 10;
+  let base = BASE_PROFILES[prof];
 
-  // Génération initiale
   let attrs = {
     "Finition": clampFM(base + randInt(-3, 3) + (POSITION_BONUS[pos]?.Finition || 0)),
     "Vitesse": clampFM(base + randInt(-3, 3) + (POSITION_BONUS[pos]?.Vitesse || 0)),
@@ -77,27 +157,13 @@ document.getElementById("generate").addEventListener("click", () => {
     "Technique": clampFM(base + randInt(-3, 3) + (POSITION_BONUS[pos]?.Technique || 0)),
     "Décisions": clampFM(base + randInt(-3, 3) + (POSITION_BONUS[pos]?.Décisions || 0)),
     "Placement": clampFM(base + randInt(-3, 3) + (POSITION_BONUS[pos]?.Placement || 0)),
-    "Sang-froid": clampFM(base + randInt(-3, 3) + (POSITION_BONUS[pos]?.["Sang-froid"] || POSITION_BONUS[pos]?.SangFroid || 0))
+    "Sang-froid": clampFM(base + randInt(-3, 3) + (POSITION_BONUS[pos]?.SangFroid || 0))
   };
 
-  // S'assurer des bornes et des 15 max
-  // 1) forcer bornes 5..15 (double sécurité)
-  for (const k in attrs) {
-    attrs[k] = Math.max(5, Math.min(15, parseInt(attrs[k], 10) || 5));
-  }
-
-  // 2) réduire si >3 notes à 15
   attrs = enforceMax15(attrs);
 
-  // 3) re-force bornes encore (au cas où)
-  for (const k in attrs) {
-    attrs[k] = Math.max(5, Math.min(15, parseInt(attrs[k], 10) || 5));
-  }
-
-  // Potentiel
   const potentiel = randInt(130, 200);
 
-  // Affichage
   let txt = `Nom : ${name}
 Nationalité : ${nat}
 Âge : ${age}
@@ -120,3 +186,6 @@ document.getElementById("copy").addEventListener("click", () => {
   alert("Copié !");
 });
 </script>
+
+</body>
+</html>
