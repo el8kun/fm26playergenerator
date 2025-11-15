@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Générateur de joueur FM26</title>
+  <style>
+    body{font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;margin:16px;background:#0f1724;color:#e6eef8}
+    .card{background:#0b1220;padding:16px;border-radius:10px;box-shadow:0 6px 20px rgba(2,6,23,.6);max-width:980px;margin:12px auto}
+    label{display:block;margin-top:10px;font-size:13px;color:#9fb0d4}
+    input,select,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid #223144;background:#071425;color:#e6eef8}
+    .row{display:flex;gap:12px}
+    .col{flex:1}
+    button{margin-top:12px;padding:10px 14px;border-radius:8px;border:0;background:#2563eb;color:white;cursor:pointer}
+    pre{white-space:pre-wrap;background:#061226;padding:12px;border-radius:8px;color:#cfe8ff;border:1px solid #17324a;max-height:420px;overflow:auto}
+    .small{font-size:12px;color:#7ea1c9}
+    .tag{display:inline-block;padding:6px 8px;margin:6px 6px 0 0;border-radius:999px;background:#0b2236;color:#9fd3ff;font-size:13px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Générateur de joueur pour FM26</h2>
+    <p class="small">Génère une fiche jouable (attributs 1–20) que tu peux copier/coller dans l'éditeur manuel de Football Manager 2026. Modifie le profil, appuie sur <strong>Générer</strong> puis <strong>Copier</strong>.</p>
+
+    <div class="row">
+      <div class="col">
+        <label>Prénom + Nom</label>
+        <input id="name" value="John Doe" />
+      </div>
+      <div class="col">
+        <label>Nationalité</label>
+        <input id="nation" value="France" />
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="col">
+        <label>Âge</label>
+        <input id="age" type="number" value="21" min="15" max="50" />
+      </div>
+      <div class="col">
+        <label>Poste principal</label>
+        <select id="position">
+          <option>BU (Buteur)</option>
+          <option>AC (Attaquant central)</option>
+          <option>AD/AG (Ailier)</option>
+          <option>MOC (Milieu offensif central)</option>
+          <option>MC (Milieu centre)</option>
+          <option>MDC (Milieu défensif)</option>
+          <option>DC (Défenseur central)</option>
+          <option>DG/DR (Arrière)</option>
+          <option>GB (Gardien)</option>
+        </select>
+      </div>
+    </div>
+
+    <label>Style / Profil</label>
+    <select id="profile">
+      <option value="balanced">Équilibré</option>
+      <option value="attacking">Axé attaque</option>
+      <option value="creative">Créatif / Technique</option>
+      <option value="defensive">Axé défense</option>
+      <option value="physical">Physique / Endurant</option>
+      <option value="speed">Vitesse / Percutant</option>
+    </select>
+
+    <label>Intensité d'aléa (0 = très conservateur, 100 = très aléatoire)</label>
+    <input id="randomness" type="range" min="0" max="100" value="35" />
+
+    <div class="row">
+      <div class="col">
+        <button id="generate">Générer</button>
+      </div>
+      <div class="col">
+        <button id="copy">Copier le bloc</button>
+      </div>
+    </div>
+
+    <h3>Sortie</h3>
+    <pre id="output">Appuie sur "Générer" pour créer un joueur.</pre>
+    <p class="small">Format: prêt à copier-coller. Si tu veux un export spécial pour l'éditeur, dis-le moi et j'ajoute le format (CSV / JSON / XML).</p>
+
+    <div style="margin-top:12px">
+      <span class="tag">Attributs 1–20</span>
+      <span class="tag">Prêt à copier</span>
+      <span class="tag">Personnalisable</span>
+    </div>
+
+  </div>
+
+<script>
+// Liste d'attributs courants FM pour joueurs de champ (exclu gardien)
+const ATTRS = [
+  'Corners','Crossing','Dribbling','Finishing','First touch','Free kick taking','Heading','Long shots','Long throws','Marking','Passing','Tackling','Technique',
+  'Acceleration','Pace','Agility','Balance','Jumping reach','Stamina','Strength','Natural fitness','Work rate','Teamwork','Determination','Aggression','Anticipation','Positioning','Off the ball','Composure','Concentration','Decisions','Flair','Leadership'
+];
+
+// Attributs gardien
+const GK_ATTRS = ['Aerial reach','Command of area','Communication','Eccentricity','Handling','Kicking','One on ones','Reflexes','Throwing','Tendency to punch'];
+
+function clamp(v,min,max){return Math.max(min,Math.min(max,Math.round(v)));}
+
+// fonctions utilitaires pour nombre aléatoire normal approximé
+function randNormal(mean,sd){
+  // Box-Muller
+  let u=0,v=0; while(u===0) u=Math.random(); while(v===0) v=Math.random();
+  let num=Math.sqrt(-2.0*Math.log(u))*Math.cos(2*Math.PI*v);
+  return mean + num*sd;
+}
+
+// Profils de poids pour chaque poste : valeurs cibles (moyennes) pour chaque « catégorie »
+const PROFILE_WEIGHTS = {
+  'BU (Buteur)': {att:14, tech:13, phys:13, def:7, pace:13},
+  'AC (Attaquant central)': {att:13, tech:14, phys:12, def:8, pace:12},
+  'AD/AG (Ailier)': {att:12, tech:13, phys:11, def:8, pace:15},
+  'MOC (Milieu offensif central)': {att:12, tech:15, phys:10, def:8, pace:11},
+  'MC (Milieu centre)': {att:10, tech:13, phys:12, def:11, pace:11},
+  'MDC (Milieu défensif)': {att:8, tech:11, phys:14, def:15, pace:10},
+  'DC (Défenseur central)': {att:7, tech:10, phys:15, def:15, pace:9},
+  'DG/DR (Arrière)': {att:9, tech:12, phys:12, def:13, pace:12},
+  'GB (Gardien)': {gk:14, phys:10}
+};
+
+const PROFILE_MOD = {
+  'balanced': {mul:1},
+  'attacking': {att:1.1},
+  'creative': {tech:1.12, att:1.02},
+  'defensive': {def:1.15, phys:1.05},
+  'physical': {phys:1.2},
+  'speed': {pace:1.25}
+};
+
+function generate(){
+  const name = document.getElementById('name').value || 'John Doe';
+  const nation = document.getElementById('nation').value || 'Inconnu';
+  const age = Number(document.getElementById('age').value)||20;
+  const pos = document.getElementById('position').value;
+  const profile = document.getElementById('profile').value;
+  const random = Number(document.getElementById('randomness').value);
+
+  const out = {name, nation, age, pos, profile, attributes:{}};
+
+  if(pos === 'GB (Gardien)'){
+    // Génération gardien — basique
+    const base = PROFILE_WEIGHTS[pos];
+    GK_ATTRS.forEach(attr=>{
+      let mean = base.gk * 1.2; // échelle
+      // variation selon profile
+      if(profile==='defensive') mean += 1;
+      if(profile==='balanced') mean += 0;
+      let sd = 2 + random/30;
+      let val = clamp(randNormal(mean, sd),1,20);
+      out.attributes[attr]=val;
+    });
+  } else {
+    const weights = PROFILE_WEIGHTS[pos];
+    // Categories: attack (finishing, long shots, heading), technique (dribbling, first touch, technique), defense (tackling, marking), phys (stamina, strength), pace (pace, acceleration)
+    // We'll compute targets per attribute depending on category and profile modifiers
+    const mods = PROFILE_MOD[profile] || {};
+
+    // mapping attribut -> category
+    const map = {
+      'Corners':'tech','Crossing':'tech','Dribbling':'tech','Finishing':'att','First touch':'tech','Free kick taking':'tech','Heading':'att','Long shots':'att','Long throws':'phys','Marking':'def','Passing':'tech','Tackling':'def','Technique':'tech',
+      'Acceleration':'pace','Pace':'pace','Agility':'pace','Balance':'phys','Jumping reach':'phys','Stamina':'phys','Strength':'phys','Natural fitness':'phys','Work rate':'phys','Teamwork':'tech','Determination':'phys','Aggression':'def','Anticipation':'tech','Positioning':'att','Off the ball':'att','Composure':'tech','Concentration':'tech','Decisions':'tech','Flair':'tech','Leadership':'tech'
+    };
+
+    ATTRS.forEach(attr=>{
+      const cat = map[attr] || 'tech';
+      // base mean from weights
+      let mean = 10; // fallback
+      if(cat==='att') mean = weights.att || 10;
+      if(cat==='tech') mean = weights.tech || 10;
+      if(cat==='def') mean = weights.def || 10;
+      if(cat==='phys') mean = weights.phys || 10;
+      if(cat==='pace') mean = weights.pace || 10;
+
+      // apply profile modifier multipliers
+      if(mods[cat]) mean *= mods[cat];
+      if(mods['att'] && cat==='att') mean*=mods['att'];
+      if(mods['tech'] && cat==='tech') mean*=mods['tech'];
+      if(mods['def'] && cat==='def') mean*=mods['def'];
+      if(mods['phys'] && cat==='phys') mean*=mods['phys'];
+      if(mods['pace'] && cat==='pace') mean*=mods['pace'];
+
+      // scale mean to 1-20 range (weights are around 7..15), so normalize
+      let scaled = (mean/16)*14 + 6; // nudged into typical 1-20
+      // randomness
+      let sd = 1.6 + random/40;
+      let val = clamp(randNormal(scaled, sd),1,20);
+
+      // small position-specific tweak: e.g. DC should have low 'Finishing'
+      if(pos==='DC (Défenseur central)'){
+        if(['Finishing','Free kick taking','Long shots','Off the ball'].includes(attr)) val = clamp(Math.min(val,12),1,20);
+        if(['Tackling','Marking','Strength','Jumping reach'].includes(attr)) val = clamp(Math.max(val,13),1,20);
+      }
+      if(pos==='BU (Buteur)'){
+        if(['Finishing','Off the ball','Positioning','Heading'].includes(attr)) val = clamp(Math.max(val,13),1,20);
+      }
+
+      out.attributes[attr]=val;
+    });
+  }
+
+  // Compose a human-friendly block for copy/paste
+  let block = `Nom: ${out.name}\nNationalité: ${out.nation}\nÂge: ${out.age}\nPoste: ${out.pos}\nProfil: ${out.profile}\n\nAttributs:\n`;
+  for(const [k,v] of Object.entries(out.attributes)){
+    block += `${k}: ${v}\n`;
+  }
+
+  // ajoute une petite ligne pour FM (exemple simple)
+  block += `\nFormat export simple: (collez chaque valeur dans l'éditeur manuel de FM26)\n`;
+
+  document.getElementById('output').textContent = block;
+}
+
+document.getElementById('generate').addEventListener('click', generate);
+
+document.getElementById('copy').addEventListener('click', ()=>{
+  const txt = document.getElementById('output').textContent;
+  navigator.clipboard.writeText(txt).then(()=>{
+    alert('Bloc copié dans le presse-papier !');
+  }).catch(()=>{alert('Impossible de copier — sélectionne et copie manuellement.')});
+});
+
+</script>
+</body>
+</html>
