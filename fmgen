@@ -1,0 +1,111 @@
+<script>
+// gestion des tabs
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    const target = tab.dataset.tab;
+    document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
+    document.getElementById(target).style.display = 'block';
+  });
+});
+
+// OUTILS
+function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function clampFM(v) { return Math.max(5, Math.min(15, Math.round(v))); }
+
+function enforceMax15(attrs) {
+  let keys15 = Object.keys(attrs).filter(k => attrs[k] === 15);
+  while (keys15.length > 3) {
+    const k = keys15.pop();
+    attrs[k] = 14;
+  }
+  return attrs;
+}
+
+// PROFILS & POSTES
+const BASE_PROFILES = {
+  "Équilibré": 10,
+  "Offensif": 11,
+  "Défensif": 10,
+  "Physique": 11,
+  "Rapide": 12,
+  "Technique": 12
+};
+
+const POSITION_BONUS = {
+  "Buteur (BU)": { "Finition":2,"Sang-froid":1,"Appels de balle":1 },
+  "Ailier (AD/AG)": { "Vitesse":2,"Accélération":1,"Centres":1,"Dribble":1 },
+  "Milieu offensif (MOC)": { "Technique":2,"Passes":1,"Inspiration":1 },
+  "Milieu central (MC)": { "Passes":1,"Décisions":1,"Volume de jeu":1 },
+  "Défenseur central (DC)": { "Tacles":2,"Placement":1,"Jeu de tête":2,"Puissance":1 },
+  "Latéral (DG/DR)": { "Vitesse":1,"Tacles":1,"Centres":1,"Endurance":1 },
+  "Gardien (GB)": {} // ignoré (tu feras un am separately si tu veux)
+};
+
+// LISTE COMPLÈTE ATTRIBUTS FM26
+const ALL_ATTRS = [
+  // Technique
+  "Corners","Centres","Dribble","Finition","Contrôle de balle","Coups francs",
+  "Jeu de tête","Tirs de loin","Touches longues","Marquage","Passes","Penalty",
+  "Tacles","Technique",
+
+  // Mental
+  "Agressivité","Anticipation","Courage","Sang-froid","Concentration","Décisions",
+  "Détermination","Inspiration","Leadership","Appels de balle","Placement",
+  "Collectif","Vision du jeu","Volume de jeu",
+
+  // Physique
+  "Accélération","Agilité","Équilibre","Détente verticale","Qualités phys. nat.",
+  "Vitesse","Endurance","Puissance"
+];
+
+// GENERATION JOUEUR
+document.getElementById("generate").addEventListener("click", () => {
+  let name = document.getElementById("name").value || "Nom";
+  let nat = document.getElementById("nation").value || "Pays";
+  let age = parseInt(document.getElementById("age").value) || 20;
+  let pos = document.getElementById("position").value;
+  let prof = document.getElementById("profile").value;
+
+  let base = BASE_PROFILES[prof] ?? 10;
+  let bonus = POSITION_BONUS[pos] ?? {};
+
+  let attrs = {};
+
+  ALL_ATTRS.forEach(att => {
+    let raw = base + randInt(-3, 3) + (bonus[att] || 0);
+    attrs[att] = clampFM(raw);
+  });
+
+  attrs = enforceMax15(attrs);
+
+  // Potentiel
+  const potentiel = randInt(130, 200);
+
+  // Affichage
+  let txt =
+`Nom : ${name}
+Nationalité : ${nat}
+Âge : ${age}
+Poste : ${pos}
+Profil : ${prof}
+
+Potentiel : ${potentiel}/200
+
+Attributs :
+`;
+
+  ALL_ATTRS.forEach(a => {
+    txt += `${a} : ${attrs[a]}\n`;
+  });
+
+  document.getElementById("output").textContent = txt;
+});
+
+// COPIE
+document.getElementById("copy").addEventListener("click", () => {
+  navigator.clipboard.writeText(document.getElementById("output").textContent);
+  alert("Copié !");
+});
+</script>
